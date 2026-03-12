@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict LKuvrodfJTOHfeBQezwtGDXQBQyZAoCkFHjdWGhbfVi48KL5krKIlT38l9k12Y6
+\restrict PngOCtyQr6R93Q0hqa9Aznv8zYllvUdNFSBCz9SRxIkUX2DTEc0SIF2t6uGxK8w
 
 -- Dumped from database version 16.13 (Ubuntu 16.13-0ubuntu0.24.04.1)
 -- Dumped by pg_dump version 16.13 (Ubuntu 16.13-0ubuntu0.24.04.1)
@@ -404,6 +404,36 @@ CREATE TABLE public.sync_state (
 ALTER TABLE public.sync_state OWNER TO trader;
 
 --
+-- Name: trade; Type: TABLE; Schema: public; Owner: trader
+--
+
+CREATE TABLE public.trade (
+    id bigint NOT NULL,
+    account_id uuid NOT NULL,
+    symbol text NOT NULL,
+    source text DEFAULT 'bybit_closed_pnl'::text NOT NULL,
+    source_row_id bigint NOT NULL,
+    side text,
+    qty numeric,
+    entry_price_avg numeric,
+    exit_price_avg numeric,
+    gross_pnl numeric DEFAULT 0 NOT NULL,
+    fees numeric DEFAULT 0 NOT NULL,
+    funding numeric DEFAULT 0 NOT NULL,
+    net_pnl numeric DEFAULT 0 NOT NULL,
+    opened_at timestamp with time zone,
+    closed_at timestamp with time zone NOT NULL,
+    duration_seconds integer,
+    outcome text NOT NULL,
+    metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+ALTER TABLE public.trade OWNER TO trader;
+
+--
 -- Name: trade_group; Type: TABLE; Schema: public; Owner: trader
 --
 
@@ -437,6 +467,27 @@ CREATE TABLE public.trade_group (
 
 
 ALTER TABLE public.trade_group OWNER TO trader;
+
+--
+-- Name: trade_id_seq; Type: SEQUENCE; Schema: public; Owner: trader
+--
+
+CREATE SEQUENCE public.trade_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.trade_id_seq OWNER TO trader;
+
+--
+-- Name: trade_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: trader
+--
+
+ALTER SEQUENCE public.trade_id_seq OWNED BY public.trade.id;
+
 
 --
 -- Name: v_daily_trade_performance; Type: VIEW; Schema: public; Owner: trader
@@ -620,6 +671,13 @@ ALTER TABLE ONLY public.raw_transaction_log ALTER COLUMN id SET DEFAULT nextval(
 
 
 --
+-- Name: trade id; Type: DEFAULT; Schema: public; Owner: trader
+--
+
+ALTER TABLE ONLY public.trade ALTER COLUMN id SET DEFAULT nextval('public.trade_id_seq'::regclass);
+
+
+--
 -- Name: account account_pkey; Type: CONSTRAINT; Schema: public; Owner: trader
 --
 
@@ -748,6 +806,22 @@ ALTER TABLE ONLY public.trade_group
 
 
 --
+-- Name: trade trade_pkey; Type: CONSTRAINT; Schema: public; Owner: trader
+--
+
+ALTER TABLE ONLY public.trade
+    ADD CONSTRAINT trade_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: trade trade_source_unique; Type: CONSTRAINT; Schema: public; Owner: trader
+--
+
+ALTER TABLE ONLY public.trade
+    ADD CONSTRAINT trade_source_unique UNIQUE (account_id, source, source_row_id);
+
+
+--
 -- Name: idx_daily_performance_account_day; Type: INDEX; Schema: public; Owner: trader
 --
 
@@ -843,6 +917,20 @@ CREATE INDEX idx_sync_state_account_entity ON public.sync_state USING btree (acc
 --
 
 CREATE INDEX idx_sync_state_updated_at ON public.sync_state USING btree (updated_at DESC);
+
+
+--
+-- Name: idx_trade_account_closed_at; Type: INDEX; Schema: public; Owner: trader
+--
+
+CREATE INDEX idx_trade_account_closed_at ON public.trade USING btree (account_id, closed_at DESC);
+
+
+--
+-- Name: idx_trade_account_symbol_closed_at; Type: INDEX; Schema: public; Owner: trader
+--
+
+CREATE INDEX idx_trade_account_symbol_closed_at ON public.trade USING btree (account_id, symbol, closed_at DESC);
 
 
 --
@@ -978,5 +1066,5 @@ ALTER TABLE ONLY public.trade_group
 -- PostgreSQL database dump complete
 --
 
-\unrestrict LKuvrodfJTOHfeBQezwtGDXQBQyZAoCkFHjdWGhbfVi48KL5krKIlT38l9k12Y6
+\unrestrict PngOCtyQr6R93Q0hqa9Aznv8zYllvUdNFSBCz9SRxIkUX2DTEc0SIF2t6uGxK8w
 

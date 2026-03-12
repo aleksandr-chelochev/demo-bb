@@ -5,7 +5,6 @@ import psycopg
 from psycopg.rows import dict_row
 from dotenv import load_dotenv
 
-
 load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -53,7 +52,7 @@ def refresh_daily_performance(conn, account_id: str):
             )
             SELECT
                 account_id,
-                (COALESCE(ended_at, started_at) AT TIME ZONE 'UTC')::date AS day,
+                (closed_at AT TIME ZONE 'UTC')::date AS day,
                 COUNT(*) AS trades_count,
                 SUM(CASE WHEN net_pnl > 0 THEN 1 ELSE 0 END) AS wins_count,
                 SUM(CASE WHEN net_pnl < 0 THEN 1 ELSE 0 END) AS losses_count,
@@ -65,16 +64,16 @@ def refresh_daily_performance(conn, account_id: str):
                 AVG(CASE WHEN net_pnl < 0 THEN net_pnl END) AS avg_loss,
                 CASE
                     WHEN COUNT(*) = 0 THEN 0
-                    ELSE ROUND(SUM(CASE WHEN net_pnl > 0 THEN 1 ELSE 0 END)::numeric / COUNT(*), 6)
+                    ELSE ROUND(
+                        SUM(CASE WHEN net_pnl > 0 THEN 1 ELSE 0 END)::numeric / COUNT(*),
+                        6
+                    )
                 END AS win_rate,
                 now(),
                 now()
-            FROM trade_group
+            FROM trade
             WHERE account_id = %s
-              AND status = 'closed'
-            GROUP BY
-                account_id,
-                (COALESCE(ended_at, started_at) AT TIME ZONE 'UTC')::date
+            GROUP BY account_id, (closed_at AT TIME ZONE 'UTC')::date
             """,
             (account_id,),
         )
@@ -123,12 +122,14 @@ def refresh_symbol_performance(conn, account_id: str):
                 AVG(CASE WHEN net_pnl < 0 THEN net_pnl END) AS avg_loss,
                 CASE
                     WHEN COUNT(*) = 0 THEN 0
-                    ELSE ROUND(SUM(CASE WHEN net_pnl > 0 THEN 1 ELSE 0 END)::numeric / COUNT(*), 6)
+                    ELSE ROUND(
+                        SUM(CASE WHEN net_pnl > 0 THEN 1 ELSE 0 END)::numeric / COUNT(*),
+                        6
+                    )
                 END AS win_rate,
                 now()
-            FROM trade_group
+            FROM trade
             WHERE account_id = %s
-              AND status = 'closed'
             GROUP BY account_id, symbol
             """,
             (account_id,),
@@ -138,12 +139,10 @@ def refresh_symbol_performance(conn, account_id: str):
 def run():
     print("=== REFRESH ANALYTICS START ===")
     print(f"ACCOUNT_ID: {ACCOUNT_ID}")
-
     conn = get_connection()
     try:
         refresh_daily_performance(conn, ACCOUNT_ID)
         refresh_symbol_performance(conn, ACCOUNT_ID)
-
         conn.commit()
         print("analytics refresh committed")
     except Exception as e:
@@ -152,8 +151,7 @@ def run():
         raise
     finally:
         conn.close()
-
-    print("=== REFRESH ANALYTICS DONE ===")
+        print("=== REFRESH ANALYTICS DONE ===")
 
 
 if __name__ == "__main__":

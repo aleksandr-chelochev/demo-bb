@@ -13,6 +13,7 @@ STEPS = [
     ("closed_pnl_collector", [sys.executable, str(ROOT / "src/collectors/bybit_closed_pnl_collector.py")]),
     ("equity_collector", [sys.executable, str(ROOT / "src/collectors/bybit_equity_collector.py")]),
     ("rebuild_trade_groups", [sys.executable, str(ROOT / "src/analytics/rebuild_trade_groups.py")]),
+    ("rebuild_trades", [sys.executable, str(ROOT / "src/analytics/rebuild_trades.py")]),
     ("refresh_analytics", [sys.executable, str(ROOT / "src/analytics/refresh_analytics.py")]),
     ("refresh_drawdown", [sys.executable, str(ROOT / "src/analytics/refresh_drawdown.py")]),
 ]
