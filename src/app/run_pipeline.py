@@ -18,7 +18,6 @@ STEPS = [
     ("refresh_drawdown", [sys.executable, str(ROOT / "src/analytics/refresh_drawdown.py")]),
 ]
 
-
 def utc_now():
     return datetime.now(timezone.utc).isoformat()
 
